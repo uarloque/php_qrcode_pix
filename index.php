@@ -125,14 +125,7 @@ p {text-align: center;}
 </head>
 <body>
 <?php
-/*
-# Exemplo de uso do php_qrcode_pix com descrição dos campos
-#
-# Desenvolvido em 2020 por Renato Monteiro Batista - http://renato.ovh
-#
-# Este código pode ser copiado, modificado, redistribuído
-# inclusive comercialmente desde que mantidos a refereência ao autor.
-*/
+
 if ($gerar_qrcode){
    include "phpqrcode/qrlib.php"; 
    include "funcoes_pix.php";
