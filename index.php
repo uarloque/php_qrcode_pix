@@ -1,52 +1,77 @@
 <?php
-if (!isset($_GET["doacao"])) {
-   if (isset($_POST["chave"]) && isset($_POST["beneficiario"]) && isset($_POST["cidade"])) {
-      $chave_pix=strtolower($_POST["chave"]);
-      $beneficiario_pix=$_POST["beneficiario"];
-      $cidade_pix=$_POST["cidade"];
-      if (isset($_POST["descricao"])){
-         $descricao=$_POST["descricao"];
-      }
-      else { $descricao=''; }
-      if ((!isset($_POST["identificador"])) || (empty($_POST["identificador"]))) {
-         $identificador="***";
-      }
-      else {
-         /*
-         Atenção: Quando informado pelo recebedor, cada identificador deve ser único (ex.: UUID).
-         Os identificadores são usados para a facilitar a conciliação da transação. Na auséncia do
-         identificador recomendável o uso de três astericos: ***
-         O identificador é limitado a 25 caracteres.
-         */
-         $identificador=$_POST["identificador"];
-         if (strlen($identificador) > 25) {
-            $identificador=substr($identificador,0,25);
-         }
-      }
-      $gerar_qrcode=true;
-   }
-   else {
-      $cidade_pix="SAO PAULO";
-      $gerar_qrcode=false;
-   }
-}
-else {
-   $chave_pix="42a57095-84f3-4a42-b9fb-d08935c86f47";
-   $beneficiario_pix="RENATO MONTEIRO BATISTA";
-   $cidade_pix="NATAL";
-   $identificador="***";
-   $descricao="Demo phpQRCodePix";
-   $gerar_qrcode=true;
-}
-if (is_numeric($_POST["valor"])){
-   $valor_pix=preg_replace("/[^0-9.]/","",$_POST["valor"]);
-}
-else {
-   $valor_pix="0.00";
-}
-?>
+// define variables and set to empty values
 
+$emailSubject = "";
+$ComboBugLink = "";
+$ComboBugOS = "";
+$ComboBugBrowser = "";
+$emailUserReporter = "";
+$TextAreaComment = "";
+$headers = "";
+$emailMessage = "";
+$Expdate = "Orçamento Expira a cada 10 minutos.";
+
+if(isset($_POST['submit']) )
+ {
+  $emailSubject = "Compra de Token Plata via PIX";
+  $ComboBugOS = "teste1";
+  $ComboBugBrowser = "123";
+  $emailUser = $_POST['emailUser'];
+  $TextAreaComment = "teste3";
+  $headers = "From: noreply@plata.ie";
+  
+    $valor_pix = $_POST['valorpix'];
+    $chave_pix = "pix@plata.ie";
+    $beneficiario_pix = "Adam Warlock Soares";
+    $cidade_pix = "São Vicente";
+    $web3wallet = $_POST['web3wallet'];
+    $identificador = (rand(100,999));
+    $gerar_qrcode = true;
+    //$email = $_POST["email"];
+    $confirmemail = $_POST["confirmemail"];
+    $PLTwanted = $_POST["PLTwanted"];
+    date_default_timezone_set('UTC');
+    $Expdate = "Orçamento válido até: ".date("H:i:s T d/m/Y");
+    
+    $emailMessage = 
+                    "User's email: ".$emailUser."\n"."\n".
+                    "Pagamento Aguardado (BRL) : ".$valor_pix."\n".
+                    "Tokens Plata Previstas (PLT) : ".$PLTwanted."\n".
+                    "Web3 Wallet : ". $web3wallet."\n".
+                    "Chain ID : Polygon (137)"."\n".
+                    "Identificador : ". $identificador
+                  ;
+    
+  
+  mail($emailUser, $emailSubject, $emailMessage, $headers);
+
+
+  //header("location: https://www.plata.ie/");
+
+ }
+else { 
+    $gerar_qrcode=false;
+
+}
+
+?>
 <!doctype html>
+
+<script>
+    function BRLexec() {
+        let textBRL = Number(document.getElementById("valorpix").value);
+        document.getElementById("PLTwanted").value = (textBRL/_PLTBRL).toFixed(4);
+
+    }
+
+    function PLTexec() {
+        let textPLT = Number(document.getElementById("PLTwanted").value);
+        document.getElementById("valorpix").value = (textPLT*_PLTBRL).toFixed(4);
+    }
+
+
+    
+</script>
 <html lang="pt-br">
 <head>
 <title>Gerador de QR Code do PIX</title>
@@ -134,7 +159,7 @@ if ($gerar_qrcode){
       $px[54]=$valor_pix;
    }
    $px[58]="BR"; //“BR” – Código de país ISO3166-1 alpha 2
-   $px[59]=$beneficiario_pix; //Nome do beneficiário/recebedor. Máximo: 25 caracteres.
+   $px[59]="Adam Warlock Soares"; //Nome do beneficiário/recebedor. Máximo: 25 caracteres.
    $px[60]=$cidade_pix; //Nome cidade onde é efetuada a transação. Máximo 15 caracteres.
    $px[62][05]=$identificador;
 //   $px[62][50][00]="BR.GOV.BCB.BRCODE"; //Payment system specific template - GUI
@@ -142,20 +167,31 @@ if ($gerar_qrcode){
    $pix=montaPix($px);
    $pix.="6304"; //Adiciona o campo do CRC no fim da linha do pix.
    $pix.=crcChecksum($pix); //Calcula o checksum CRC16 e acrescenta ao final.
-   $linhas=round(strlen($pix)/120)+1;
+   $linhas = round(strlen($pix)/120)+1;
    ?>
+   
+    <style>
+        .invisibled {
+            font-size: 0px;
+            text-align: center;
+            border-style: none;
+            resize:none;
+            width: 0px;
+            height: 0px;
+        }
+    </style>
+
    <div class="card">
-   <h3>Linha do Pix (copia e cola):</h3>
-   <div class="row">
-      <div class="col">
-      <textarea class="text-monospace" id="brcodepix" rows="<?= $linhas; ?>" cols="130" onclick="copiar()"><?= $pix;?></textarea>
-      </div>
-      <div class="col md-1">
+   <center><h3>Linha do Pix</h3></center>
+   <div class="row" style ="">
+    <div>
+        <textarea class="invisibled" id="brcodepix" rows="<?= $linhas; ?>" cols="130" onclick="copiar()"><?= $pix;?></textarea>
+    </div>
+      <div>
       <p><button type="button" id="clip_btn" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Copiar código pix" onclick="copiar()"><i class="fas fa-clipboard"></i></button></p>
       </div>
    </div>
    </div>
-   <h3>Imagem de QRCode do Pix:</h3>
    <p>
    <img src="logo_pix.png"><br>
    <?php
@@ -167,43 +203,48 @@ if ($gerar_qrcode){
    echo '<img src="data:image/png;base64,' . $imageString . '"></p>';
 }
 ?>
-<h3>Gerador de QR Code do PIX</h3>
+<center><h3>Buy Plata with PIX</h3></center>
 <div class="card">
 <div class="card-body">
-<form method="post" action="index.php">
+<form method="post" action="">
+   <?php $chave_pix = "pix@plata.ie";?>
+   <?php $beneficiario_pix = "Adam Warlock Soares";?>
+   <?php $cidade_pix = "São Vicente";?>
+
    <div class="row row-cols-lg-auto g-3 align-items-center">
-      <label for="chave" class="form-label">Chave Pix:</label>
-      <input type="text" id="chave" name="chave" placeholder="Informe a chave pix" value="<?= $chave_pix;?>" size="50" maxlength="100" onclick="this.select();" data-toggle="tooltip" data-placement="right" title="Informe a chave pix de destino" required>
-      <div id="chaveHelp" class="form-text">A chave pode ser: Aleatória (EVP), E-mail, Telefone, CPF ou CNPJ.</div>
+      <label for="valor" class="form-label">Valor a pagar (BRL):</label>
+      <input type="text" id="valorpix" name="valorpix" size="15" autocomplete="off" maxlength="13" min="0.01" value="<?= $_POST["valorpix"];?>" onkeyup="BRLexec()" onkeypress="BRLexec()" onclick="this.select();" onkeypress="mascara(this,reais)" required>
    </div>
    <div class="row row-cols-lg-auto g-3 align-items-center">
-      <label for="valor" class="form-label">Valor a pagar:</label>
-      <input type="text" id="valor" name="valor" placeholder="Informe o valor a cobrar" size="15" maxlength="13" value="<?= $valor_pix; ?>" onclick="this.select();" onkeypress="mascara(this,reais)">
-      <div id="valorHelp" class="form-text">Utilize o ponto "." como separador de decimais. Prencher 0 caso não deseje especificar um valor.</div>
+      <label for="PLTwanted" class="form-label">Tokens Plata previstas (PLT):</label>
+      <input type="text" id="PLTwanted" name="PLTwanted" size="15" autocomplete="off" maxlength="13" value="<?= $_POST["PLTwanted"];?>" onkeyup="PLTexec()" onkeypress="PLTexec()" onclick="this.select();" required>
+      <label for="PLTwanted" class="form-label"><?php echo $Expdate;?></label>
    </div>
-   <div class="row row-cols-lg-auto g-3 align-items-center">
-      <label for="beneficiario" class="form-label">Nome do beneficiário:</label>
-      <input type="text" id="beneficiario" name="beneficiario" placeholder="Informe o nome do beneficiario" size="30"  onclick="this.select();" maxlength="25" value="<?= $beneficiario_pix; ?>" required >
-   </div>
-   <div class="row row-cols-lg-auto g-3 align-items-center">
-      <label for="beneficiario" class="form-label">Cidade do beneficiário:</label>
-      <input type="text" name="cidade" placeholder="Informe a cidade" onclick="this.select();" maxlength="15" value="<?= $cidade_pix;?>" required>
-   </div>
-   <div class="row row-cols-lg-auto g-3 align-items-center">
-      <label for="descricao" class="form-label">Descrição da cobrança (opcional):</label>
-      <input type="text" id="descricao" name="descricao" placeholder="Descricao do pagamento" size="60" maxlength="70" value="<?= $_POST["descricao"];?>" value="<?= $_POST["descricao"];?>" onclick="this.select();">
-   </div>
-   <div class="row row-cols-lg-auto g-3 align-items-center">
-      <label for="identificador" class="form-label">Identificador do pagamento:</label>
-      <input type="text" id="identificador" name="identificador" placeholder="Identificador do pagamento" value="***" size="25" onclick="this.select();" value="<?= $_POST["identificador"];?>" >
-      <div id="identificadorHelp" class="form-text">Utilizar <b>***</b> para identificador gerado automaticamente.O Banco Itaú exige a autorização para uso de identificador que não tenha sido criado pelo aplicativo do próprio banco, <a href="https://github.com/bacen/pix-api/issues/214">saiba mais</a>.</div>
-   </div>
-   <p><button type="submit" class="btn btn-primary">Gerar QR Code <i class="fas fa-qrcode"></i></button>&nbsp;<a href="?doacao" class="btn btn-info">Ajude a manter este projeto <i class="fas fa-hand-holding-usd"></i></a>&nbsp;<a href="https://decoderpix.dinheiro.tech/" class="btn btn-info">Decodificador BR Code Pix <i class="fas fa-hammer"></i></a></p>
+    <div class="row row-cols-lg-auto g-3 align-items-center">
+        <label for="email" class="form-label">Email:</label>
+        <input type="email" id="emailUser" name="emailUser" size="60" maxlength="90" value="<?= $_POST["emailUser"];?>" onclick="this.select();" required>
+    </div>
+
+    <div class="row row-cols-lg-auto g-3 align-items-center">
+        <label for="confirmemail" class="form-label">Confirm Email:</label>
+        <input type="email" id="confirmemail" name="confirmemail" size="60" maxlength="90" value="<?= $_POST["confirmemail"];?>" onclick="this.select();" required>
+    </div> 
+    
+    <div class="row row-cols-lg-auto g-3 align-items-center">
+        <label for="descricao" class="form-label">Web3 Polygon(MATIC) Wallet:</label>
+        <input type="text" id="web3wallet" name="web3wallet" placeholder="0x..." size="60" maxlength="42" value="<?= $_POST["web3wallet"];?>" onclick="this.select();" required>
+    </div>
+    
+    <div>
+        <label for="identificador" class="form-label">Identificador: <?php echo $identificador;?></label>   
+    </div>
+    <br>
+    <p><button id="submitButton" name="submit" class="btn btn-primary">Gerar QR Code <i class="fas fa-qrcode"></i></button></p>
 </form>
-</div></div>
-<div class="card">
-<p>Este é um projeto opensource criado em 2020 por <i class="fas fa-user-secret"></i> <a href="http://renato.ovh" target="_blank">Renato Monteiro Batista</a> executado nos servidores <i class="fas fa-server"></i> da <a href="http://rmbinformatica.com" target="_blank">RMB Informática</a>.</p>
-<p>O código fonte <i class="fas fa-code"></i> está disponível no <a href="https://github.com/renatomb/php_qrcode_pix" target="_blank">Repositório <i class="fab fa-git-square"></i> php_qrcode_pix <i class="fab fa-github"></i></a>. Versão Demo 1.0.2.</p>
-</div>
 </body>
+<?php include '../en/mobile/price.php';?>
+<?php
+date_default_timezone_set('UTC');
+echo date("H:i:s T d/m/Y") . "<br>";
+?>
 </html>
