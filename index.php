@@ -14,10 +14,7 @@ $Expdate = "Orçamento Expira a cada 10 minutos.";
 if(isset($_POST['submit']) )
  {
   $emailSubject = "Compra de Token Plata via PIX";
-  $ComboBugOS = "teste1";
-  $ComboBugBrowser = "123";
   $emailUser = $_POST['emailUser'];
-  $TextAreaComment = "teste3";
   $headers = "From: noreply@plata.ie";
   
     $valor_pix = $_POST['valorpix'];
@@ -26,26 +23,33 @@ if(isset($_POST['submit']) )
     $cidade_pix = "São Vicente";
     $web3wallet = $_POST['web3wallet'];
     $identificador = (rand(100,999));
+    $TXTidentificador = "Identificador: ". $identificador;
     $gerar_qrcode = true;
     //$email = $_POST["email"];
     $confirmemail = $_POST["confirmemail"];
     $PLTwanted = $_POST["PLTwanted"];
-    date_default_timezone_set('UTC');
-    $Expdate = "Orçamento válido até: ".date("H:i:s T d/m/Y");
     
+    date_default_timezone_set('UTC');
+    $Expdate = date("H:i:s T d/m/Y");
+    $Expdate = strtotime($Expdate);
+    $Expdate = strtotime("+15 minute", $Expdate);
+    $TXTdate = "Orçamento válido até ".date("H:i:s T d/m/Y",$Expdate);
+
     $emailMessage = 
                     "User's email: ".$emailUser."\n"."\n".
-                    "Pagamento Aguardado (BRL) : ".$valor_pix."\n".
+                    "Valor Aguardado (BRL) : ".$valor_pix."\n".
                     "Tokens Plata Previstas (PLT) : ".$PLTwanted."\n".
                     "Web3 Wallet : ". $web3wallet."\n".
                     "Chain ID : Polygon (137)"."\n".
-                    "Identificador : ". $identificador
+                    "Identificador : ". $identificador."\n".
+                    "Orçamento Válido Até : ". date("H:i:s T d/m/Y",$Expdate)
                   ;
     
   
   mail($emailUser, $emailSubject, $emailMessage, $headers);
 
-
+ //echo "<script>document.getElementById('forml').style.display = 'none';</script>";
+ 
   //header("location: https://www.plata.ie/");
 
  }
@@ -58,6 +62,10 @@ else {
 <!doctype html>
 
 <script>
+    function hideForm(){
+        document.getElementById("forml").style.display = "none";
+    }
+    
     function BRLexec() {
         let textBRL = Number(document.getElementById("valorpix").value);
         document.getElementById("PLTwanted").value = (textBRL/_PLTBRL).toFixed(4);
@@ -68,10 +76,8 @@ else {
         let textPLT = Number(document.getElementById("PLTwanted").value);
         document.getElementById("valorpix").value = (textPLT*_PLTBRL).toFixed(4);
     }
-
-
-    
 </script>
+
 <html lang="pt-br">
 <head>
 <title>Gerador de QR Code do PIX</title>
@@ -131,7 +137,7 @@ if ($gerar_qrcode){
    include "funcoes_pix.php";
    $px[00]="01"; //Payload Format Indicator, Obrigatório, valor fixo: 01
    // Se o QR Code for para pagamento único (só puder ser utilizado uma vez), descomente a linha a seguir.
-   //$px[01]="12"; //Se o valor 12 estiver presente, significa que o BR Code só pode ser utilizado uma vez. 
+   $px[01]="12"; //Se o valor 12 estiver presente, significa que o BR Code só pode ser utilizado uma vez. 
    $px[26][00]="br.gov.bcb.pix"; //Indica arranjo específico; “00” (GUI) obrigatório e valor fixo: br.gov.bcb.pix
    $px[26][01]=$chave_pix;
    if (!empty($descricao)) {
@@ -197,7 +203,7 @@ if ($gerar_qrcode){
 }
 ?>
 <center><h3>Buy Plata with PIX</h3></center>
-<div class="card">
+<div id="forml">
 <div class="card-body">
 <form method="post" action="">
    <?php $chave_pix = "pix@plata.ie";?>
@@ -206,12 +212,12 @@ if ($gerar_qrcode){
 
    <div class="row row-cols-lg-auto g-3 align-items-center">
       <label for="valor" class="form-label">Valor a pagar (BRL):</label>
-      <input type="text" id="valorpix" name="valorpix" size="15" autocomplete="off" maxlength="13" min="0.01" value="<?= $_POST["valorpix"];?>" onkeyup="BRLexec()" onkeypress="BRLexec()" onclick="this.select();" onkeypress="mascara(this,reais)" required>
+      <input type="number" id="valorpix" name="valorpix" size="15" autocomplete="off" maxlength="13" step="0.001" min="0.001" value="<?= $_POST["valorpix"];?>" onkeyup="BRLexec()" onkeypress="BRLexec()" onclick="this.select();" onkeypress="mascara(this,reais)" required>
    </div>
    <div class="row row-cols-lg-auto g-3 align-items-center">
       <label for="PLTwanted" class="form-label">Tokens Plata previstas (PLT):</label>
-      <input type="text" id="PLTwanted" name="PLTwanted" size="15" autocomplete="off" maxlength="13" value="<?= $_POST["PLTwanted"];?>" onkeyup="PLTexec()" onkeypress="PLTexec()" onclick="this.select();" required>
-      <label for="PLTwanted" class="form-label"><?php echo $Expdate;?></label>
+      <input type="number" id="PLTwanted" name="PLTwanted" size="15" step="0.0001" autocomplete="off" maxlength="13" min="0.0001" value="<?= $_POST["PLTwanted"];?>" onkeyup="PLTexec()" onkeypress="PLTexec()" onclick="this.select();" required>
+      <label for="PLTwanted" class="form-label"><?php echo $TXTdate;?></label>
    </div>
     <div class="row row-cols-lg-auto g-3 align-items-center">
         <label for="email" class="form-label">Email:</label>
@@ -229,10 +235,10 @@ if ($gerar_qrcode){
     </div>
     
     <div>
-        <label for="identificador" class="form-label">Identificador: <?php echo $identificador;?></label>   
+        <label for="identificador" class="form-label"><?php echo $TXTidentificador;?></label>   
     </div>
     <br>
-    <p><button id="submitButton" name="submit" class="btn btn-primary">Gerar QR Code <i class="fas fa-qrcode"></i></button></p>
+    <p><button id="submitButton" name="submit" class="btn btn-primary" onclick="hideForm()">Gerar QR Code <i class="fas fa-qrcode"></i></button></p>
 </form>
 </body>
 <?php include '../en/mobile/price.php';?>
